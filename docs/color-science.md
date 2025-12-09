@@ -4,6 +4,8 @@
 
 Modern multi-channel flashlights like the Emisar D4K combine multiple colored LEDs to produce a wide range of colors. But how do we know *how much* of each LED to use to get a specific color? This document explains the color science behind LED mixing and how Anduril calculates optimal channel ratios.
 
+![Visible Light Spectrum](images/spectrum_bar.png)
+
 ---
 
 ## Part 1: How We See Color
@@ -12,34 +14,11 @@ Modern multi-channel flashlights like the Emisar D4K combine multiple colored LE
 
 The human eye contains three types of cone cells, each sensitive to different wavelengths of light:
 
-```mermaid
-graph LR
-    subgraph "Visible Spectrum (380-780nm)"
-        V[Violet 380nm] --> B[Blue 450nm]
-        B --> C[Cyan 490nm]
-        C --> G[Green 530nm]
-        G --> Y[Yellow 570nm]
-        Y --> O[Orange 600nm]
-        O --> R[Red 700nm]
-    end
-
-    subgraph "Cone Response"
-        S["S-cones (Short)\n~420nm peak\nBlue-sensitive"]
-        M["M-cones (Medium)\n~530nm peak\nGreen-sensitive"]
-        L["L-cones (Long)\n~560nm peak\nRed-sensitive"]
-    end
-
-    style V fill:#8B00FF,color:#fff
-    style B fill:#0066FF,color:#fff
-    style C fill:#00CCCC,color:#000
-    style G fill:#00CC00,color:#000
-    style Y fill:#FFCC00,color:#000
-    style O fill:#FF6600,color:#000
-    style R fill:#CC0000,color:#fff
-    style S fill:#3366FF,color:#fff
-    style M fill:#33CC33,color:#000
-    style L fill:#FF6666,color:#000
-```
+| Cone Type | Peak Sensitivity | Color Range |
+|-----------|------------------|-------------|
+| S-cones (Short) | ~420nm | Blue-violet |
+| M-cones (Medium) | ~530nm | Green |
+| L-cones (Long) | ~560nm | Red-yellow |
 
 When light enters the eye, each cone type responds according to its sensitivity curve. The *combination* of these three signals is what we perceive as color.
 
@@ -49,32 +28,7 @@ Here's the crucial insight that makes color mixing possible:
 
 > **Two physically different light spectra can appear identical if they stimulate the three cone types in the same ratio.**
 
-This is called **metamerism**. It means we don't need to recreate the exact spectrum of daylight—we just need to stimulate the eye in the same *proportion*.
-
-```mermaid
-flowchart TB
-    subgraph "Daylight"
-        D[Continuous spectrum\n380-780nm]
-    end
-
-    subgraph "LED Mix"
-        R[Red LED\n630nm]
-        G[Green LED\n528nm]
-        B[Blue LED\n465nm]
-    end
-
-    D --> |"S: 0.31\nM: 0.33\nL: 0.36"| Eye[Human Perception]
-    R & G & B --> |"S: 0.31\nM: 0.33\nL: 0.36"| Eye
-
-    Eye --> Same["Perceived as\nthe same white!"]
-
-    style D fill:#FFF8E7,color:#000,stroke:#FFD700
-    style R fill:#CC0000,color:#fff
-    style G fill:#00CC00,color:#000
-    style B fill:#0066FF,color:#fff
-    style Eye fill:#FFE4B5,color:#000
-    style Same fill:#FFFFFF,color:#000,stroke:#333,stroke-width:2px
-```
+This is called **metamerism**. It means we don't need to recreate the exact spectrum of daylight—we just need to stimulate the eye in the same *proportion*. Daylight has a continuous spectrum across all wavelengths, but a mix of just three narrow-band LEDs (red, green, blue) can produce the same perception of white light.
 
 ---
 
@@ -86,30 +40,12 @@ In 1931, the **Commission Internationale de l'Éclairage** (CIE) standardized ho
 
 These functions describe how much each "virtual primary" is needed to match any wavelength:
 
-```
-        ┌─────────────────────────────────────────────────────┐
-   1.8  │                      z̄(λ)                          │
-        │                       ╱╲                            │
-   1.6  │                      ╱  ╲                           │
-        │                     ╱    ╲                          │
-   1.4  │                    ╱      ╲                         │
-        │                   ╱        ╲                        │
-   1.2  │                  ╱          ╲    x̄(λ)              │
-        │                 ╱            ╲   ╱╲                 │
-   1.0  │                ╱              ╲ ╱  ╲                │
-        │               ╱                ╳    ╲   ȳ(λ)       │
-   0.8  │              ╱                ╱ ╲    ╲  ╱╲         │
-        │             ╱                ╱   ╲    ╲╱  ╲        │
-   0.6  │            ╱                ╱     ╲   ╱╲   ╲       │
-        │           ╱                ╱       ╲ ╱  ╲   ╲      │
-   0.4  │          ╱                ╱         ╳    ╲   ╲     │
-        │         ╱                ╱         ╱ ╲    ╲   ╲    │
-   0.2  │        ╱                ╱         ╱   ╲    ╲   ╲   │
-        │     __╱________________╱_________╱_____╲____╲___╲__│
-   0.0  └─────────────────────────────────────────────────────┘
-        380    430    480    530    580    630    680    730  nm
-              Blue         Green        Yellow      Red
-```
+![CIE 1931 Color Matching Functions](images/cmf_spectrum.png)
+
+The three curves show the CIE 1931 2° Standard Observer:
+- **x̄(λ)** (red curve) - peaks in red-orange region
+- **ȳ(λ)** (green curve) - matches human luminance perception, peaks at 555nm
+- **z̄(λ)** (blue curve) - peaks in blue-violet region
 
 ### Calculating XYZ Tristimulus Values
 
@@ -136,35 +72,14 @@ $$y = \frac{Y}{X + Y + Z}$$
 
 This gives us the famous "horseshoe" chromaticity diagram:
 
-```
-    y
-  0.9 ┌────────────────────────────────────────┐
-      │            520nm                        │
-  0.8 │           ╱    ╲ Green                  │
-      │         ╱        ╲                      │
-  0.7 │   510 ╱            ╲ 540               │
-      │      │              ╲                   │
-  0.6 │ 500 │                ╲ 560             │
-      │     │                  ╲                │
-  0.5 │490  │          ★        ╲ 580          │ ★ = D65 White
-      │     │        D65         ╲             │     (Daylight)
-  0.4 │ 480│                      ╲ 600        │
-      │    │    ●───────────────●  ╲           │ Triangle = RGB
-  0.3 │    │   ╱ ╲     Gamut    ╱   ╲ 620      │ LED Gamut
-      │470│  ╱    ╲            ╱      ╲        │
-  0.2 │   │ ╱      ╲          ╱        ╲ 650   │
-      │   │╱        ╲        ╱          ╲      │
-  0.1 │460│          ╲______╱            ╲700+ │
-      │  ●────────────────────────────────●    │
-  0.0 └────────────────────────────────────────┘
-      0.0   0.1   0.2   0.3   0.4   0.5   0.6   0.7  x
-```
+![CIE 1931 xy Chromaticity Diagram](images/chromaticity_diagram.png)
 
 Key points:
-- The curved edge is the **spectral locus** (pure single-wavelength light)
+- The curved edge is the **spectral locus** (pure single-wavelength light) - each point corresponds to a single wavelength
+- The spectral locus is colored with the actual perceived colors at each wavelength
 - Any color inside the curve can be created by mixing light sources
-- The **triangle** formed by three LEDs shows what colors they can produce together (their "gamut")
-- D65 (6500K daylight) sits near the center at x=0.3127, y=0.3290
+- The **triangle** formed by three LEDs (red 630nm, green 528nm, blue 465nm) shows their **gamut** - all colors they can produce
+- Standard illuminants D65 (6500K daylight), D50 (5000K), and A (2856K tungsten) are marked
 
 ---
 
@@ -174,25 +89,11 @@ Key points:
 
 Unlike incandescent bulbs that emit a continuous spectrum, LEDs emit light in a narrow band around their **dominant wavelength**:
 
-```
-    Relative
-    Intensity
-       ↑
-   1.0 │           LED (narrowband)
-       │              ╱╲
-   0.8 │             ╱  ╲
-       │            ╱    ╲
-   0.6 │           ╱      ╲         Incandescent (broadband)
-       │          ╱        ╲     _____________________
-   0.4 │         ╱          ╲___╱                     ╲
-       │        ╱                                      ╲
-   0.2 │       ╱                                        ╲
-       │      ╱                                          ╲
-   0.0 │_____╱____________________________________________╲____
-       400    450    500    550    600    650    700    750  nm
-                    ↑
-              Dominant λ
-```
+![LED Spectral Power Distributions](images/led_spd_comparison.png)
+
+The chart shows Gaussian approximations of common LED spectra. Each LED emits in a narrow band characterized by:
+- **Dominant wavelength** - the peak of the emission
+- **FWHM** (Full Width at Half Maximum) - how "pure" the color is
 
 ### Full Width at Half Maximum (FWHM)
 
@@ -224,38 +125,11 @@ This approximation is accurate enough for colorimetric calculations while being 
 
 ### From LED Spectra to XYZ
 
-For each LED, we calculate its XYZ values by integrating its spectrum against the CMFs:
+For each LED, we calculate its XYZ values by integrating its Gaussian SPD against the color matching functions. The process is:
 
-```mermaid
-flowchart LR
-    subgraph "LED Spectra"
-        R["Red LED\nλ=630nm\nFWHM=20nm"]
-        G["Green LED\nλ=528nm\nFWHM=35nm"]
-        B["Blue LED\nλ=465nm\nFWHM=25nm"]
-    end
-
-    subgraph "Integration"
-        CMF["CIE 1931\nColor Matching\nFunctions"]
-    end
-
-    subgraph "XYZ Values"
-        RX["X_R, Y_R, Z_R"]
-        GX["X_G, Y_G, Z_G"]
-        BX["X_B, Y_B, Z_B"]
-    end
-
-    R --> CMF --> RX
-    G --> CMF --> GX
-    B --> CMF --> BX
-
-    style R fill:#CC0000,color:#fff
-    style G fill:#00CC00,color:#000
-    style B fill:#0066FF,color:#fff
-    style CMF fill:#E6E6FA,color:#000
-    style RX fill:#FFCCCC,color:#000
-    style GX fill:#CCFFCC,color:#000
-    style BX fill:#CCCCFF,color:#000
-```
+1. **Generate SPD** - Create Gaussian curve from dominant wavelength and FWHM
+2. **Multiply by CMFs** - Point-by-point multiplication with x̄(λ), ȳ(λ), z̄(λ)
+3. **Integrate** - Sum across all wavelengths to get X, Y, Z tristimulus values
 
 ### The Forward Matrix (PWM → XYZ)
 
@@ -305,28 +179,14 @@ Four LEDs, but only three colors—with **two green LEDs**.
 
 ### Why Does This Matter?
 
-At equal PWM, the green channel produces **twice the light** because there are two physical LEDs. This shifts the mixed color toward green:
+At equal PWM, the green channel produces **twice the light** because there are two physical LEDs. This shifts the mixed color toward green. The solution is to scale down the green channel to achieve neutral white.
 
-```mermaid
-flowchart LR
-    subgraph "At Equal PWM"
-        E["R=255, G=255, B=255"]
-    end
+![RGBG Color Mixing Problem and Solution](images/rgbg_mixing.png)
 
-    subgraph "Actual Light"
-        A["1× Red photons\n2× Green photons\n1× Blue photons"]
-    end
-
-    subgraph "Result"
-        GW["Greenish White\nxy=(0.23, 0.47)"]
-    end
-
-    E --> A --> GW
-
-    style E fill:#888888,color:#fff
-    style A fill:#88FF88,color:#000
-    style GW fill:#AAFFAA,color:#000,stroke:#00CC00,stroke-width:3px
-```
+The figure shows:
+1. **RGB Equal Mix (1:1:1)** - With balanced LED counts, the result is close to D65 white
+2. **RGBG Equal Mix (1:2:1)** - With two green LEDs, the result shifts green (high y-chromaticity)
+3. **RGBG Corrected** - Scaling green to 41% (105/256) brings the result back to D65 white
 
 ### The Solution: Green Scaling
 
