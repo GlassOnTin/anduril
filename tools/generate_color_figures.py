@@ -409,6 +409,401 @@ def plot_spectrum_bar():
     return fig
 
 
+def plot_color_modes():
+    """
+    Show all color modes with their chromaticity positions and derivation.
+    """
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    # Calculate spectral locus
+    x_locus, y_locus = calculate_spectral_locus()
+
+    # Draw spectral locus with colors
+    for i in range(len(CIE_WAVELENGTHS) - 1):
+        if i < len(x_locus) - 1:
+            wl = CIE_WAVELENGTHS[i]
+            color = wavelength_to_rgb(wl)
+            ax.plot([x_locus[i], x_locus[i+1]], [y_locus[i], y_locus[i+1]],
+                   color=color, linewidth=3)
+
+    # Purple line
+    ax.plot([x_locus[-1], x_locus[0]], [y_locus[-1], y_locus[0]],
+           color='purple', linewidth=2, linestyle='--', alpha=0.7)
+
+    # Get LED chromaticities
+    red = LED_DATABASE['XPE2_RED']
+    green = LED_DATABASE['XPE2_GREEN']
+    blue = LED_DATABASE['XPE2_BLUE']
+
+    r_xyz = led_to_xyz(red)
+    g_xyz = led_to_xyz(green)
+    b_xyz = led_to_xyz(blue)
+
+    r_xy = xyz_to_chromaticity(*r_xyz)
+    g_xy = xyz_to_chromaticity(*g_xyz)
+    b_xy = xyz_to_chromaticity(*b_xyz)
+
+    # Draw gamut triangle
+    triangle = Polygon([r_xy, g_xy, b_xy], closed=True, fill=True,
+                      facecolor='#f0f0f0', edgecolor='black', linewidth=2, alpha=0.3)
+    ax.add_patch(triangle)
+
+    # Plot LED positions
+    ax.plot(*r_xy, 'o', color='#CC0000', markersize=20, markeredgecolor='black', markeredgewidth=2)
+    ax.plot(*g_xy, 'o', color='#00CC00', markersize=20, markeredgecolor='black', markeredgewidth=2)
+    ax.plot(*b_xy, 'o', color='#0066FF', markersize=20, markeredgecolor='black', markeredgewidth=2)
+
+    ax.annotate('Red LED\n630nm', xy=r_xy, xytext=(r_xy[0]+0.02, r_xy[1]-0.06),
+               fontsize=10, ha='left')
+    ax.annotate('Green LED\n528nm', xy=g_xy, xytext=(g_xy[0]-0.08, g_xy[1]+0.02),
+               fontsize=10, ha='center')
+    ax.annotate('Blue LED\n465nm', xy=b_xy, xytext=(b_xy[0]-0.02, b_xy[1]-0.05),
+               fontsize=10, ha='right')
+
+    # Define color modes with their calculations
+    modes = []
+
+    # Mode 1: D65 White (RGBG with scale=105)
+    scale_white = 105/256
+    X_w = r_xyz[0] + 2*scale_white*g_xyz[0] + b_xyz[0]
+    Y_w = r_xyz[1] + 2*scale_white*g_xyz[1] + b_xyz[1]
+    Z_w = r_xyz[2] + 2*scale_white*g_xyz[2] + b_xyz[2]
+    white_xy = xyz_to_chromaticity(X_w, Y_w, Z_w)
+    modes.append(('D65 White', white_xy, '#FFFFFF', 'black',
+                  'R:255 + G:105×2 + B:255\nMAIN2_SCALE=105'))
+
+    # Mode 2: Yellow/Orange (R + G,G with scale=32)
+    scale_yellow = 32/256
+    X_y = r_xyz[0] + 2*scale_yellow*g_xyz[0]
+    Y_y = r_xyz[1] + 2*scale_yellow*g_xyz[1]
+    Z_y = r_xyz[2] + 2*scale_yellow*g_xyz[2]
+    yellow_xy = xyz_to_chromaticity(X_y, Y_y, Z_y)
+    modes.append(('Yellow/Orange', yellow_xy, '#FFAA00', 'black',
+                  'R:255 + G:32×2 + B:0\nMAIN2_SCALE_RGG=32'))
+
+    # Mode 3: Cyan (G,G + B with scale=128)
+    scale_cyan = 128/256
+    X_c = 2*scale_cyan*g_xyz[0] + b_xyz[0]
+    Y_c = 2*scale_cyan*g_xyz[1] + b_xyz[1]
+    Z_c = 2*scale_cyan*g_xyz[2] + b_xyz[2]
+    cyan_xy = xyz_to_chromaticity(X_c, Y_c, Z_c)
+    modes.append(('Cyan', cyan_xy, '#00CCCC', 'black',
+                  'R:0 + G:128×2 + B:255\nMAIN2_SCALE_GGB=128'))
+
+    # Mode 4: Purple (R + B only)
+    X_p = r_xyz[0] + b_xyz[0]
+    Y_p = r_xyz[1] + b_xyz[1]
+    Z_p = r_xyz[2] + b_xyz[2]
+    purple_xy = xyz_to_chromaticity(X_p, Y_p, Z_p)
+    modes.append(('Purple', purple_xy, '#CC00CC', 'white',
+                  'R:255 + G:0 + B:255\n(No green)'))
+
+    # Mode 5: Pure Green (G,G only)
+    modes.append(('Green', g_xy, '#00CC00', 'black',
+                  'R:0 + G:255×2 + B:0\n(Green LEDs only)'))
+
+    # Mode 6: Pure Red
+    modes.append(('Red', r_xy, '#CC0000', 'white',
+                  'R:255 + G:0 + B:0\n(Red LED only)'))
+
+    # Mode 7: Pure Blue
+    modes.append(('Blue', b_xy, '#0066FF', 'white',
+                  'R:0 + G:0 + B:255\n(Blue LED only)'))
+
+    # Plot all modes
+    for name, xy, facecolor, textcolor, formula in modes:
+        if name not in ['Red', 'Green', 'Blue']:  # Already plotted LEDs
+            ax.plot(*xy, 's', color=facecolor, markersize=18,
+                   markeredgecolor='black', markeredgewidth=2)
+
+        # Position annotations to avoid overlap
+        if name == 'D65 White':
+            offset = (0.04, 0.02)
+        elif name == 'Yellow/Orange':
+            offset = (0.03, 0.03)
+        elif name == 'Cyan':
+            offset = (-0.15, 0.02)
+        elif name == 'Purple':
+            offset = (0.03, -0.02)
+        else:
+            continue  # Skip LED labels (already done)
+
+        ax.annotate(f'{name}\nxy=({xy[0]:.3f}, {xy[1]:.3f})\n{formula}',
+                   xy=xy, xytext=(xy[0]+offset[0], xy[1]+offset[1]),
+                   fontsize=9, ha='left',
+                   bbox=dict(boxstyle='round,pad=0.3', facecolor=facecolor,
+                            edgecolor='black', alpha=0.8),
+                   color=textcolor)
+
+    # Draw lines showing mixing paths
+    # Yellow: R to G line
+    ax.plot([r_xy[0], g_xy[0]], [r_xy[1], g_xy[1]], 'k--', alpha=0.3, linewidth=1)
+    # Cyan: G to B line
+    ax.plot([g_xy[0], b_xy[0]], [g_xy[1], b_xy[1]], 'k--', alpha=0.3, linewidth=1)
+    # Purple: R to B line
+    ax.plot([r_xy[0], b_xy[0]], [r_xy[1], b_xy[1]], 'k--', alpha=0.3, linewidth=1)
+
+    # D65 reference
+    d65_xy = (0.3127, 0.3290)
+    ax.plot(*d65_xy, '*', color='black', markersize=12)
+    ax.annotate('D65\n(6500K)', xy=d65_xy, xytext=(d65_xy[0]-0.08, d65_xy[1]-0.05),
+               fontsize=9)
+
+    # Styling
+    ax.set_xlim(0.0, 0.75)
+    ax.set_ylim(0.0, 0.85)
+    ax.set_xlabel('x chromaticity', fontsize=12)
+    ax.set_ylabel('y chromaticity', fontsize=12)
+    ax.set_title('RGBG Color Modes: Chromaticity Positions and PWM Settings', fontsize=14)
+    ax.set_aspect('equal')
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    return fig
+
+
+def planckian_locus_xy(T):
+    """Calculate xy chromaticity for blackbody at temperature T (Kelvin)."""
+    # Approximation valid for 1667K to 25000K
+    if T < 4000:
+        x = (-0.2661239e9/T**3 - 0.2343589e6/T**2 + 0.8776956e3/T + 0.179910)
+    else:
+        x = (-3.0258469e9/T**3 + 2.1070379e6/T**2 + 0.2226347e3/T + 0.240390)
+
+    if T < 2222:
+        y = (-1.1063814*x**3 - 1.34811020*x**2 + 2.18555832*x - 0.20219683)
+    elif T < 4000:
+        y = (-0.9549476*x**3 - 1.37418593*x**2 + 2.09137015*x - 0.16748867)
+    else:
+        y = (3.0817580*x**3 - 5.87338670*x**2 + 3.75112997*x - 0.37001483)
+
+    return x, y
+
+
+def plot_planckian_locus():
+    """
+    Show Planckian locus (blackbody curve) with CCT markers.
+    """
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    # Calculate spectral locus
+    x_locus, y_locus = calculate_spectral_locus()
+
+    # Draw spectral locus with colors
+    for i in range(len(CIE_WAVELENGTHS) - 1):
+        if i < len(x_locus) - 1:
+            wl = CIE_WAVELENGTHS[i]
+            color = wavelength_to_rgb(wl)
+            ax.plot([x_locus[i], x_locus[i+1]], [y_locus[i], y_locus[i+1]],
+                   color=color, linewidth=3, alpha=0.5)
+
+    # Purple line
+    ax.plot([x_locus[-1], x_locus[0]], [y_locus[-1], y_locus[0]],
+           color='purple', linewidth=2, linestyle='--', alpha=0.3)
+
+    # Calculate Planckian locus
+    temps = np.linspace(1800, 10000, 200)
+    planck_x = []
+    planck_y = []
+    for T in temps:
+        x, y = planckian_locus_xy(T)
+        planck_x.append(x)
+        planck_y.append(y)
+
+    # Draw Planckian locus
+    ax.plot(planck_x, planck_y, 'k-', linewidth=3, label='Planckian Locus')
+
+    # Mark specific CCTs
+    cct_markers = [
+        (2700, 'Warm White\n(Incandescent)', '#FFB366'),
+        (3000, '3000K', '#FFC080'),
+        (4000, 'Neutral\n4000K', '#FFE0B0'),
+        (5000, 'Daylight\n5000K', '#FFF0E0'),
+        (5500, '5500K', '#FFF4E8'),
+        (6500, 'D65\n6500K', '#FFFFFF'),
+        (8000, 'Cool\n8000K', '#E8F0FF'),
+    ]
+
+    for T, label, color in cct_markers:
+        x, y = planckian_locus_xy(T)
+        ax.plot(x, y, 'o', color=color, markersize=15,
+               markeredgecolor='black', markeredgewidth=2)
+
+        # Alternate label positions
+        if T < 4000:
+            offset = (0.02, 0.02)
+        elif T < 6000:
+            offset = (0.02, -0.03)
+        else:
+            offset = (-0.02, -0.04)
+
+        ax.annotate(label, xy=(x, y), xytext=(x+offset[0], y+offset[1]),
+                   fontsize=9, ha='center',
+                   bbox=dict(boxstyle='round,pad=0.2', facecolor=color,
+                            edgecolor='black', alpha=0.9))
+
+    # Draw Duv lines (iso-temperature lines perpendicular to locus)
+    ax.annotate('Duv > 0\n(greenish)', xy=(0.35, 0.40), fontsize=10, color='green',
+               ha='center')
+    ax.annotate('Duv < 0\n(pinkish)', xy=(0.35, 0.32), fontsize=10, color='#CC6699',
+               ha='center')
+
+    # Add arrow showing Duv direction
+    ax.annotate('', xy=(0.35, 0.38), xytext=(0.35, 0.35),
+               arrowprops=dict(arrowstyle='->', color='gray', lw=2))
+
+    # Styling
+    ax.set_xlim(0.2, 0.55)
+    ax.set_ylim(0.25, 0.45)
+    ax.set_xlabel('x chromaticity', fontsize=12)
+    ax.set_ylabel('y chromaticity', fontsize=12)
+    ax.set_title('Planckian Locus: Correlated Color Temperature (CCT)', fontsize=14)
+    ax.set_aspect('equal')
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right')
+
+    plt.tight_layout()
+    return fig
+
+
+def plot_scale_derivation():
+    """
+    Show how different scale values affect the resulting chromaticity.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # Get LED XYZ values
+    red = LED_DATABASE['XPE2_RED']
+    green = LED_DATABASE['XPE2_GREEN']
+    blue = LED_DATABASE['XPE2_BLUE']
+
+    r_xyz = led_to_xyz(red)
+    g_xyz = led_to_xyz(green)
+    b_xyz = led_to_xyz(blue)
+
+    r_xy = xyz_to_chromaticity(*r_xyz)
+    g_xy = xyz_to_chromaticity(*g_xyz)
+    b_xy = xyz_to_chromaticity(*b_xyz)
+
+    # ===== Panel 1: R+G,G blend (Yellow mode) =====
+    ax1 = axes[0]
+
+    # Draw RGB triangle
+    triangle = Polygon([r_xy, g_xy, b_xy], closed=True, fill=True,
+                      facecolor='#f8f8f8', edgecolor='gray', linewidth=1, alpha=0.5)
+    ax1.add_patch(triangle)
+
+    # Plot LEDs
+    ax1.plot(*r_xy, 'o', color='#CC0000', markersize=15, markeredgecolor='black')
+    ax1.plot(*g_xy, 'o', color='#00CC00', markersize=15, markeredgecolor='black')
+
+    # Calculate and plot trajectory for different scales
+    scales = [16, 32, 64, 96, 128, 192, 255]
+    trajectory_x = []
+    trajectory_y = []
+
+    for scale in scales:
+        s = scale / 256
+        X = r_xyz[0] + 2*s*g_xyz[0]
+        Y = r_xyz[1] + 2*s*g_xyz[1]
+        Z = r_xyz[2] + 2*s*g_xyz[2]
+        xy = xyz_to_chromaticity(X, Y, Z)
+        trajectory_x.append(xy[0])
+        trajectory_y.append(xy[1])
+
+        # Color gradient from red to yellow-green
+        color = plt.cm.YlOrRd(1 - s)
+        ax1.plot(*xy, 's', color=color, markersize=12, markeredgecolor='black')
+        ax1.annotate(f'{scale}', xy=xy, xytext=(xy[0]+0.01, xy[1]+0.01),
+                    fontsize=8)
+
+    # Draw trajectory line
+    ax1.plot(trajectory_x, trajectory_y, 'k--', alpha=0.5, linewidth=2)
+
+    # Highlight chosen value
+    chosen_scale = 32
+    s = chosen_scale / 256
+    X = r_xyz[0] + 2*s*g_xyz[0]
+    Y = r_xyz[1] + 2*s*g_xyz[1]
+    Z = r_xyz[2] + 2*s*g_xyz[2]
+    chosen_xy = xyz_to_chromaticity(X, Y, Z)
+    ax1.plot(*chosen_xy, 's', color='#FFAA00', markersize=18,
+            markeredgecolor='black', markeredgewidth=3)
+    ax1.annotate(f'Chosen: {chosen_scale}\nxy=({chosen_xy[0]:.3f}, {chosen_xy[1]:.3f})',
+                xy=chosen_xy, xytext=(chosen_xy[0]-0.1, chosen_xy[1]+0.05),
+                fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='#FFAA00', alpha=0.8),
+                arrowprops=dict(arrowstyle='->', color='black'))
+
+    ax1.set_xlim(0.15, 0.75)
+    ax1.set_ylim(0.25, 0.80)
+    ax1.set_xlabel('x chromaticity', fontsize=11)
+    ax1.set_ylabel('y chromaticity', fontsize=11)
+    ax1.set_title('Yellow Mode: R + G×scale (MAIN2_SCALE_RGG)', fontsize=12)
+    ax1.set_aspect('equal')
+    ax1.grid(True, alpha=0.3)
+
+    # ===== Panel 2: G,G+B blend (Cyan mode) =====
+    ax2 = axes[1]
+
+    # Draw RGB triangle
+    triangle = Polygon([r_xy, g_xy, b_xy], closed=True, fill=True,
+                      facecolor='#f8f8f8', edgecolor='gray', linewidth=1, alpha=0.5)
+    ax2.add_patch(triangle)
+
+    # Plot LEDs
+    ax2.plot(*g_xy, 'o', color='#00CC00', markersize=15, markeredgecolor='black')
+    ax2.plot(*b_xy, 'o', color='#0066FF', markersize=15, markeredgecolor='black')
+
+    # Calculate and plot trajectory for different scales
+    trajectory_x = []
+    trajectory_y = []
+
+    for scale in scales:
+        s = scale / 256
+        X = 2*s*g_xyz[0] + b_xyz[0]
+        Y = 2*s*g_xyz[1] + b_xyz[1]
+        Z = 2*s*g_xyz[2] + b_xyz[2]
+        xy = xyz_to_chromaticity(X, Y, Z)
+        trajectory_x.append(xy[0])
+        trajectory_y.append(xy[1])
+
+        # Color gradient from blue to cyan-green
+        color = plt.cm.GnBu(1 - s*0.7)
+        ax2.plot(*xy, 's', color=color, markersize=12, markeredgecolor='black')
+        ax2.annotate(f'{scale}', xy=xy, xytext=(xy[0]+0.01, xy[1]+0.01),
+                    fontsize=8)
+
+    # Draw trajectory line
+    ax2.plot(trajectory_x, trajectory_y, 'k--', alpha=0.5, linewidth=2)
+
+    # Highlight chosen value
+    chosen_scale = 128
+    s = chosen_scale / 256
+    X = 2*s*g_xyz[0] + b_xyz[0]
+    Y = 2*s*g_xyz[1] + b_xyz[1]
+    Z = 2*s*g_xyz[2] + b_xyz[2]
+    chosen_xy = xyz_to_chromaticity(X, Y, Z)
+    ax2.plot(*chosen_xy, 's', color='#00CCCC', markersize=18,
+            markeredgecolor='black', markeredgewidth=3)
+    ax2.annotate(f'Chosen: {chosen_scale}\nxy=({chosen_xy[0]:.3f}, {chosen_xy[1]:.3f})',
+                xy=chosen_xy, xytext=(chosen_xy[0]+0.03, chosen_xy[1]+0.08),
+                fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='#00CCCC', alpha=0.8),
+                arrowprops=dict(arrowstyle='->', color='black'))
+
+    ax2.set_xlim(0.10, 0.20)
+    ax2.set_ylim(0.0, 0.80)
+    ax2.set_xlabel('x chromaticity', fontsize=11)
+    ax2.set_ylabel('y chromaticity', fontsize=11)
+    ax2.set_title('Cyan Mode: G×scale + B (MAIN2_SCALE_GGB)', fontsize=12)
+    ax2.set_aspect('equal')
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    return fig
+
+
 def main():
     """Generate all figures."""
     # Ensure output directory exists
@@ -423,6 +818,9 @@ def main():
         ('led_spd_comparison.png', plot_led_spd_comparison, 'LED SPD comparison'),
         ('rgbg_mixing.png', plot_rgbg_mixing, 'RGBG mixing demonstration'),
         ('spectrum_bar.png', plot_spectrum_bar, 'Spectrum reference bar'),
+        ('color_modes.png', plot_color_modes, 'Color modes chromaticity map'),
+        ('planckian_locus.png', plot_planckian_locus, 'Planckian locus (CCT)'),
+        ('scale_derivation.png', plot_scale_derivation, 'Scale factor derivation'),
     ]
 
     for filename, plot_func, description in figures:

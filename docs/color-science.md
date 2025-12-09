@@ -250,27 +250,25 @@ Channel Settings:
 
 ### Chromaticity Map
 
-```
-      y
-    0.8 │           ● Green (0.17, 0.76)
-        │          ╱│╲
-    0.7 │         ╱ │ ╲
-        │        ╱  │  ╲
-    0.6 │       ╱   │   ╲
-        │      ╱    │    ╲
-    0.5 │  Cyan●    │     ●Yellow
-        │    ╱ ╲    │    ╱
-    0.4 │   ╱   ╲   │   ╱
-        │  ╱     ╲  ★D65╱
-    0.3 │ ╱       ╲ │ ╱
-        │╱         ╲│╱
-    0.2 │           ●Purple
-        │          ╱│╲
-    0.1 │● Blue   ╱ │ ╲   Red ●
-        │(0.14,0.05) │    (0.70,0.30)
-    0.0 └───────────────────────────────
-        0.0  0.1  0.2  0.3  0.4  0.5  0.6  0.7  x
-```
+The following diagram shows all four color modes on the xy chromaticity diagram, with their exact chromaticity coordinates and the PWM formulas used to achieve them:
+
+![RGBG Color Modes Chromaticity Map](images/color_modes.png)
+
+Each color mode is derived by mixing specific LED channels:
+- **D65 White**: All channels active with green scaled to 105/256 to achieve neutral white
+- **Yellow/Orange**: Red + scaled green (32/256), no blue - produces warm amber
+- **Cyan**: Blue + scaled green (128/256), no red - produces aqua/teal
+- **Purple**: Red + blue only, green completely off - produces magenta
+
+### How Scale Values Are Derived
+
+The scale values aren't arbitrary—they're calculated to achieve specific chromaticity targets. The diagram below shows how changing the scale value traces a path along the mixing line between two LEDs:
+
+![Scale Factor Derivation](images/scale_derivation.png)
+
+For example:
+- **Yellow mode**: We want a warm orange, not a sickly yellow-green. Lower scale values (32) push the result toward red
+- **Cyan mode**: We want a balanced aqua. Scale=128 gives a pleasant cyan between pure blue and green
 
 ---
 
@@ -287,25 +285,27 @@ For white light, we describe warmth using **Kelvin**:
 | 5000K | Cool daylight | (0.35, 0.36) |
 | 6500K | D65 standard | (0.31, 0.33) |
 
+### The Planckian Locus
+
+The **Planckian locus** is the path that a theoretical blackbody radiator traces through chromaticity space as its temperature changes. This is the standard reference for describing "white" light:
+
+![Planckian Locus with CCT markers](images/planckian_locus.png)
+
+The curve shows how color temperature affects chromaticity:
+- **Lower temperatures (2700K-3000K)**: Warm white, yellowish, like incandescent bulbs
+- **Mid temperatures (4000K-5000K)**: Neutral white, commonly used in offices
+- **Higher temperatures (5500K-6500K)**: Cool white, bluish, like overcast daylight
+- **Very high (8000K+)**: Very cool, almost blue
+
 ### Duv: Distance from Planckian Locus
 
-Not all whites are created equal. **Duv** measures how "pink" or "green" a white is:
+Not all whites are created equal. **Duv** (delta-uv) measures how far a light source deviates from the Planckian locus:
 
-- Duv < 0: Pinkish/magenta tint
-- Duv = 0: On the blackbody curve (natural)
-- Duv > 0: Greenish tint
+- **Duv < 0**: Pinkish/magenta tint (below the locus)
+- **Duv = 0**: On the blackbody curve (natural, no tint)
+- **Duv > 0**: Greenish tint (above the locus)
 
-```
-    y
-    │           Planckian Locus (blackbody curve)
-    │              2700K ───── 4000K ───── 6500K
-    │                 ╲          │          ╱
-    │      Duv > 0     ╲         │         ╱    (greenish)
-    │   ────────────────●────────●────────●─────────
-    │      Duv < 0     ╱         │         ╲    (pinkish)
-    │                 ╱          │          ╲
-    └─────────────────────────────────────────────── x
-```
+High-CRI LED flashlights often aim for Duv close to zero or slightly negative (rosy tint) for pleasant skin tones. A green tint (positive Duv) is generally considered unflattering.
 
 ---
 
