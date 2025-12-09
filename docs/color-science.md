@@ -456,6 +456,3 @@ $$f(t) = \begin{cases} t^{1/3} & t > \delta^3 \\ \frac{t}{3\delta^2} + \frac{4}{
 4. Cree XLamp XP-E2 LED Datasheet
 5. Anduril 2 Source Code: https://github.com/ToyKeeper/anduril
 
----
-
-*Document generated for Anduril 2 firmware project. Last updated: 2024.*
