@@ -28,6 +28,17 @@ graph LR
         M["M-cones (Medium)\n~530nm peak\nGreen-sensitive"]
         L["L-cones (Long)\n~560nm peak\nRed-sensitive"]
     end
+
+    style V fill:#8B00FF,color:#fff
+    style B fill:#0066FF,color:#fff
+    style C fill:#00CCCC,color:#000
+    style G fill:#00CC00,color:#000
+    style Y fill:#FFCC00,color:#000
+    style O fill:#FF6600,color:#000
+    style R fill:#CC0000,color:#fff
+    style S fill:#3366FF,color:#fff
+    style M fill:#33CC33,color:#000
+    style L fill:#FF6666,color:#000
 ```
 
 When light enters the eye, each cone type responds according to its sensitivity curve. The *combination* of these three signals is what we perceive as color.
@@ -56,6 +67,13 @@ flowchart TB
     R & G & B --> |"S: 0.31\nM: 0.33\nL: 0.36"| Eye
 
     Eye --> Same["Perceived as\nthe same white!"]
+
+    style D fill:#FFF8E7,color:#000,stroke:#FFD700
+    style R fill:#CC0000,color:#fff
+    style G fill:#00CC00,color:#000
+    style B fill:#0066FF,color:#fff
+    style Eye fill:#FFE4B5,color:#000
+    style Same fill:#FFFFFF,color:#000,stroke:#333,stroke-width:2px
 ```
 
 ---
@@ -229,6 +247,14 @@ flowchart LR
     R --> CMF --> RX
     G --> CMF --> GX
     B --> CMF --> BX
+
+    style R fill:#CC0000,color:#fff
+    style G fill:#00CC00,color:#000
+    style B fill:#0066FF,color:#fff
+    style CMF fill:#E6E6FA,color:#000
+    style RX fill:#FFCCCC,color:#000
+    style GX fill:#CCFFCC,color:#000
+    style BX fill:#CCCCFF,color:#000
 ```
 
 ### The Forward Matrix (PWM → XYZ)
@@ -296,6 +322,10 @@ flowchart LR
     end
 
     E --> A --> GW
+
+    style E fill:#888888,color:#fff
+    style A fill:#88FF88,color:#000
+    style GW fill:#AAFFAA,color:#000,stroke:#00CC00,stroke-width:3px
 ```
 
 ### The Solution: Green Scaling
