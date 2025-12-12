@@ -50,8 +50,9 @@
 // - 7. 3ch blend (HSV style)
 // - 8. 3ch auto blend (red-warm-cool style, led4-led3-main2)
 // - 9. CCT ramp (2700K-6500K along Planckian locus)
-// - 10+. RGB aux (hidden)
-#define NUM_CHANNEL_MODES   (9 + NUM_RGB_AUX_CHANNEL_MODES)
+// - 10. chaos mode (chaotic pendulum color animation)
+// - 11+. RGB aux (hidden)
+#define NUM_CHANNEL_MODES   (10 + NUM_RGB_AUX_CHANNEL_MODES)
 enum channel_modes_e {
     CM_MAIN2 = 0,
     CM_LED3,
@@ -62,22 +63,22 @@ enum channel_modes_e {
     CM_HSV,
     CM_AUTO3,
     CM_CCT,       // CCT ramp: 2700K (warm) to 6500K (cool)
+    CM_CHAOS,     // chaotic pendulum color animation
     RGB_AUX_ENUMS
 };
 
-// Enable: CM_MAIN2, CM_LED3, CM_LED4, CM_ALL, CM_BLEND34A, CM_BLEND34B, CM_HSV, CM_AUTO3, CM_CCT
-// Bit positions: 0=MAIN2(G,G), 1=LED3(R), 2=LED4(B), 3=ALL(R,G,G,B),
-//                4=BLEND34A(R+B), 5=BLEND34B(R+G,G), 6=HSV, 7=AUTO3(G,G+B), 8=CCT
-#define CHANNEL_MODES_ENABLED 0b0000000111111111
+// Enable all 10 user-facing channel modes by default
+#define CHANNEL_MODES_ENABLED 0b0000001111111111
 #define USE_CHANNEL_MODE_ARGS
-// _, _, _, _, 128=middle blend, 128=middle blend, 213=purple, _, 128=~4600K
-#define CHANNEL_MODE_ARGS 0,0,0,0,128,128,213,0,128,RGB_AUX_CM_ARGS
+// _, _, _, _, 128=middle blend, 128=middle blend, 213=purple, _, 128=~4600K, 128=medium energy
+#define CHANNEL_MODE_ARGS 0,0,0,0,128,128,213,0,128,128,RGB_AUX_CM_ARGS
 #define USE_CUSTOM_CHANNEL_3H_MODES
 #define USE_CIRCULAR_TINT_3H
 
 // can use some of the common handlers
 #define USE_CALC_2CH_BLEND
 #define USE_HSV2RGB
+#define USE_CHAOS_MODE
 
 
 #define PWM_CHANNELS 1  // old, remove this
